@@ -1,0 +1,5 @@
+"","Time Series","surr(low)","surr(high)","H0"
+"Predictive skill","0.999",NA,"0.999","Deterministic"
+"Entropy","0.299","0.475",NA,"Deterministic"
+"k","5",NA,NA,NA
+"alpha","0.05",NA,NA,NA
