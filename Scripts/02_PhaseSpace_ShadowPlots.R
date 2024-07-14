@@ -4,7 +4,7 @@ library(tidyverse)
 library(lubridate)
 library(forestmangr)  #round elements in matrix
 library(robustHD) #standardize
-library(animation)
+
 
 #All Data _ Isleta ####
 ts <- read.csv("Data/Processed/ExtentChngDry_Irrig.csv") %>% 
@@ -45,13 +45,18 @@ colnames(reconstruction2)<-c("dates","data","standardized","signal","noise",
 IsletaSignal <- reconstruction2$signal
 
 #save the signal
-write.csv(IsletaSignal, "Results/IsletaSignal_Irrig.csv", row.names = F)
+#write.csv(IsletaSignal, "Results/IsletaSignal_Irrig.csv", row.names = F)
 
 #Embedding delay with Mutual Information Function ####
-mutual.out <- mutual(IsletaSignal) #mutual(tseriesChaos) Embedding delay = d 
+mutual.out <- mutual(IsletaSignal, lag.max = 100) #mutual(tseriesChaos) Embedding delay = d 
+d <- as.numeric(as.data.frame(mutual.out) %>% 
+  rownames_to_column() %>% 
+  filter(x == min(x)) %>% 
+  rename(Emdelay = 1) %>% 
+  select(Emdelay))
 
-dump("embed_delay_udf", file="Functions/embed_delay_udf.R");source("Functions/embed_delay_udf.R")
-d<-d_udf(IsletaSignal)  #compute average mutual information function with udf embed_delay_udf
+# dump("embed_delay_udf", file="Functions/embed_delay_udf.R");source("Functions/embed_delay_udf.R")
+# d<-d_udf(IsletaSignal)  #compute average mutual information function with udf embed_delay_udf
 
 par(mfrow=c(1,2))  
 out<-stplot(IsletaSignal,m=3,d=d,idt=1,mdt=length(IsletaSignal))
@@ -63,16 +68,23 @@ plot(contour_10,type='l')
 
 #false nearest neighobors test
 #embedding parameter is d
-tw <- 500
+tw <- as.numeric(which.max(contour_10))
+
 
 #from tseriesChaos
-m.max <- 6 #max number of embedding dimensions to consider
+m.max <- 10 #max number of embedding dimensions to consider
 fn.out <- false.nearest(IsletaSignal, m.max, d, tw)
+for_m <- as.numeric(which.min(fn.out[2, 1:10])) 
+  
+
+#to plot
 fn.out[is.na(fn.out)] <- 0
-plot(fn.out) #shows best embedding ~4
+plot(fn.out) #shows best embedding which is where % false nearest neighbors drops to lowest value
+
+
 
 #Time-delay embedding
-m <- 4
+m <- for_m
 Mx <- embedd(IsletaSignal, m=m, d=d)
 head(Mx)
 
@@ -88,4 +100,5 @@ embedding <- function(x){
 
 par(mfrow=c(1,2)) 
 embedding(IsletaSignal)
-scatterplot3d(Mx, type = "l", main="shadow isleta irrigation months")
+scatterplot3d(Mx, type = "l", main="shadow isleta")
+

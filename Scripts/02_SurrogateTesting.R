@@ -11,11 +11,8 @@ dump("embed_udf", file="Functions/embed_udf.R"); source("Functions/embed_udf.R")
 dump("predict_np_udf", file="Functions/predict_np_udf.R"); source("Functions/predict_np_udf.R")
 dump("PPS_generate_udf", file="Functions/PPS_generate_udf.R"); source("Functions/PPS_generate_udf.R")
 
-##########################
-# INFORMATION YOU SUPPLY #
-##########################
 ## Theiler window estimated from space-time separation plot
-tw<-500
+tw<-509
 
 ## Hypothesis testing parameters
 np<-T    #T: run nonlinear prediction skill as discriminating statistic
@@ -68,9 +65,7 @@ for(i in 1:n.surrogates){
 surr <- surrogates[1:6, 1:5]
 print("Surrogates (subset)"); print(surr)
 
-################################################
 # Chunk 3: Surrogate Discriminating Statistics #
-################################################
 
 ## Upper-tailed test for nonlinear prediction skill (nse)
 sys.start <- Sys.time()
