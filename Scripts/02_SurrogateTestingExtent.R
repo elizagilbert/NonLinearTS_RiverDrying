@@ -81,7 +81,7 @@ if(np) {
   # Rank-order test
   nse.low<-NA
   nse.high<-sort(nse.surr)[length(nse.surr)-(k-1)]  #lower limit on k largest values
-} #end if np - 1 hr Isleta all; 
+} #end if np - 1 hr Isleta all; Isleta Irrig 1.3 hrs and nse.high = 0.9985
 sys.stop <- Sys.time()
 run_time <- sys.stop-sys.start
 beep(3)
