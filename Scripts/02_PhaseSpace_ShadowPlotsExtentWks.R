@@ -19,6 +19,18 @@ library(fields)
 library(R.devices)
 library(beepr)
 
+if(!require(robustHD)) { install.packages('robustHD') }
+library(robustHD)  #embedding
+if(!require(tseriesChaos)) { install.packages('tseriesChaos') }
+library(tseriesChaos)  #embedding
+if(!require(nonlinearTseries)) { install.packages('nonlinearTseries') } 
+library(nonlinearTseries)
+if(!require(pdc)) { install.packages('pdc') }
+library(pdc)  #permutation entropy
+if(!require(fields)) { install.packages('fields') }; library(fields)
+if(!require(R.devices)) { install.packages('R.devices') }; library(R.devices)
+library(beepr)
+
 #Functions ####
 dump("SSA_udf", file="Functions/SSA_udf.R");source("Functions/SSA_udf.R")  #Singlar spectrum analysis
 dump("embed_udf", file="Functions/embed_udf.R"); source("Functions/embed_udf.R")
@@ -33,6 +45,7 @@ extent_isl_ts <- read.csv("Data/Processed/ExtentChngDry.csv") %>%
   select(dates, ExtentDry) %>% 
   as_tsibble(index = dates)
 
+
 #STL decomposition with trend and season ####
 extent_isl_ts %>% 
   model(STL(ExtentDry ~ trend() + season(),robust = TRUE)) %>% 
@@ -41,26 +54,54 @@ extent_isl_ts %>%
   labs(title = "Seasonal and Trend decomposition using Loess with seasonal window default = 13")+
   theme_classic()
 
+decomposed <- extent_isl_ts %>% 
+  model(STL(ExtentDry ~ trend() + season(), robust = TRUE)) %>% 
+  components() 
+
+compiled <- decomposed$season_week + decomposed$season_year
+
+trend_variance <- var(decomposed$trend, na.rm = TRUE)
+seasonal_variance <- var(decomposed$season_year, na.rm = TRUE)
+week_variance <- var(decomposed$season_week, na.rm = TRUE)
+remainder_variance <- var(decomposed$remainder, na.rm = TRUE)
+
+total_variance <- trend_variance + seasonal_variance + week_variance + remainder_variance
+week_proportion <- week_variance/total_variance
+seasonal_proportion <- seasonal_variance/total_variance
+trend_proportion <- trend_variance/total_variance
+remainder_proportion <- remainder_variance/total_variance
+
+
 decomp_is <- extent_isl_ts %>% 
   model(STL(ExtentDry ~ trend() + season(), robust = TRUE)) %>% 
   components() %>% 
-  select(season_week) %>% 
-  filter(year(dates) <= 2015)
+  filter(between(month(dates), 4, 10)) %>% 
+  select(season_week) 
 
 #signal data####
-x<-decomp_is %>% 
-  as.data.frame() %>% 
-  select(season_week) %>% 
-  standardize() %>%   #standardize data
-  mutate(season_week = season_week + 12.702003)
+#x.obs <- compiled
+#x<-standardize(x.obs)   #standardize data
+#dates<-decomposed$dates
 
-x <- x$season_week
-
+x.obs <- decomp_is$season_week
+x<-standardize(x.obs)   #standardize data
 dates<-decomp_is$dates
 
 
+#Singular Spectrum Analysis Huffaker ####
+output<-SSA(x)  #run SSA_udf
+w.corr2<-output[[1]]
+groups2<-output[[2]]
+reconstruction2<-output[[3]]
+cycles2<-output[[4]]
+cycle.lengths2<-cycles2[1,][-ncol(cycles2)]
+colnames(reconstruction2)<-c("dates","data","standardized","signal","noise",
+                             paste("cycle_",as.integer(cycle.lengths2),sep='')) 
+
+IsletaSignal <- reconstruction2$signal
+
 #Singular Spectrum Analysis - Rssa ####
-#Huffaker function - has errors
+
 ssa_obj <- ssa(x)
 
 # Summary of SSA results
@@ -82,7 +123,7 @@ IsletaSignal <- reconstructed$F1
 #write.csv(IsletaSignal, "Results/IsletaSignal_Wk.csv", row.names = F)
 
 #Embedding delay with Average Mutual Information (AMI) Function ####
-mutual.out <- mutual(IsletaSignal, lag.max = 100) #mutual(tseriesChaos) Embedding delay = d 
+mutual.out <- mutual(IsletaSignal, lag.max = 20) #mutual(tseriesChaos) Embedding delay = d 
 d <- as.numeric(as.data.frame(mutual.out) %>% 
                   rownames_to_column() %>% 
                   filter(x == min(x)) %>% 
@@ -92,11 +133,11 @@ d <- as.numeric(as.data.frame(mutual.out) %>%
 # dump("embed_delay_udf", file="Functions/embed_delay_udf.R");source("Functions/embed_delay_udf.R")
 # d<-d_udf(IsletaSignal)  #compute average mutual information function with udf embed_delay_udf
 
-par(mfrow=c(1,2))  
+par(mfrow=c(1,1))  
 out<-stplot(IsletaSignal,m=3,d=d,idt=1,mdt=length(IsletaSignal))
 
 ## Isolate observations of highest contour
-contour_10<-out[10,1:1000]
+contour_10<-out[10,1:100]
 plot(contour_10,type='l')
 
 #false nearest neighobors test
@@ -131,7 +172,7 @@ embedding <- function(x){
 
 par(mfrow=c(1,2)) 
 embedding(IsletaSignal)
-scatterplot3d(Mx, type = "l", main="shadow isleta")
+scatterplot3d(Mx, type = "l", main="shadow isleta weekly")
 
 #Surrogate testing ####
 ## Theiler window estimated from space-time separation plot
@@ -147,7 +188,7 @@ lb=0.01;ub=0.4 #upper and lower bounds to use if PPS selected
 frac.learn<-0.4  #percent of rows used in learning set for nonlinear prediction
 
 #  Observed Times Series Data #
-x <- read.csv("Results/IsletaSignal_Wk.csv")
+x <- IsletaSignal
 x <- as.matrix(x)
 
 ## Signal: Discriminating statistics

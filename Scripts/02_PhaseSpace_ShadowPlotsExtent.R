@@ -7,7 +7,7 @@ library(robustHD) #standardize
 
 
 #All Data _ Isleta ####
-ts <- read.csv("Data/Processed/ExtentChngDry_Irrig.csv") %>% 
+ts <- read.csv("Data/Processed/ExtentChngDry.csv") %>% 
   mutate(Date = as.Date(Date, format = "%Y-%m-%d")) %>% 
   filter(Reach == "Isleta") %>%  #used year only to see SSA
   rename(dates = Date) %>%   
@@ -42,13 +42,13 @@ cycle.lengths2<-cycles2[1,][-ncol(cycles2)]
 colnames(reconstruction2)<-c("dates","data","standardized","signal","noise",
                              paste("cycle_",as.integer(cycle.lengths2),sep='')) 
 
-IsletaSignal <- reconstruction2$signal
+SanAcaciaSignal <- reconstruction2$signal
 
 #save the signal
-#write.csv(IsletaSignal, "Results/IsletaSignal_Irrig.csv", row.names = F)
+write.csv(SanAcaciaSignal, "Results/SanAcaciaSignal_Irrig.csv", row.names = F)
 
 #Embedding delay with Mutual Information Function ####
-mutual.out <- mutual(IsletaSignal, lag.max = 100) #mutual(tseriesChaos) Embedding delay = d 
+mutual.out <- mutual(SanAcaciaSignal, lag.max = 100) #mutual(tseriesChaos) Embedding delay = d 
 d <- as.numeric(as.data.frame(mutual.out) %>% 
   rownames_to_column() %>% 
   filter(x == min(x)) %>% 
@@ -59,7 +59,7 @@ d <- as.numeric(as.data.frame(mutual.out) %>%
 # d<-d_udf(IsletaSignal)  #compute average mutual information function with udf embed_delay_udf
 
 par(mfrow=c(1,2))  
-out<-stplot(IsletaSignal,m=3,d=d,idt=1,mdt=length(IsletaSignal))
+out<-stplot(SanAcaciaSignal,m=3,d=d,idt=1,mdt=length(SanAcaciaSignal))
 
 
 ## Isolate observations of highest contour
@@ -73,7 +73,7 @@ tw <- as.numeric(which.max(contour_10))
 
 #from tseriesChaos
 m.max <- 10 #max number of embedding dimensions to consider
-fn.out <- false.nearest(IsletaSignal, m.max, d, tw)
+fn.out <- false.nearest(SanAcaciaSignal, m.max, d, tw)
 for_m <- as.numeric(which.min(fn.out[2, 1:10])) 
   
 
@@ -85,7 +85,7 @@ plot(fn.out) #shows best embedding which is where % false nearest neighbors drop
 
 #Time-delay embedding
 m <- for_m
-Mx <- embedd(IsletaSignal, m=m, d=d)
+Mx <- embedd(SanAcaciaSignal, m=m, d=d)
 head(Mx)
 
 Mx <- Mx[,1:3]
@@ -99,6 +99,6 @@ embedding <- function(x){
 }
 
 par(mfrow=c(1,2)) 
-embedding(IsletaSignal)
-scatterplot3d(Mx, type = "l", main="shadow isleta")
+embedding(SanAcaciaSignal)
+scatterplot3d(Mx, type = "l", main="Shadow SanAcacia Irrig")
 

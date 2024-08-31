@@ -22,11 +22,13 @@ SanAcacia <- read.csv("Data/Processed/USGS_discharge.csv") %>%
   filter(between(month(dates), 4, 10)) %>% 
   mutate(Discharge_cfs = na.approx(Discharge_cfs))
 
-IsletaDis <- readNWISdv(siteNumbers = "08331160",
+IsletaDis <- readNWISdv(siteNumbers = "08330875",
                      parameterCd = "00060",
                      startDate = "2010-01-01",
                      endDate = "2021-12-31") %>% 
   rename(Discharge_cfs = 4, dates = Date) %>% 
+  complete(dates = seq(min(dates), max(dates), by = "day")) %>%
+  mutate(Discharge_cfs = na.approx(Discharge_cfs)) %>% 
   filter(between(month(dates), 4, 10))
 
 ts <- IsletaDis #change based on what gage using
@@ -63,7 +65,7 @@ colnames(reconstruction2)<-c("dates","data","standardized","signal","noise",
 DischargeSignal <- reconstruction2$signal
 
 #save the signal
-#write.csv(DischargeSignal, "Results/IsletaDischargeSignal_Irrig.csv", row.names = F)
+write.csv(DischargeSignal, "Results/Signal_Discharge/IsletaDischargeSignal_Irrig.csv", row.names = F)
 
 #Embedding delay with Mutual Information Function ####
 mutual.out <- mutual(DischargeSignal, lag.max = 100) #mutual(tseriesChaos) Embedding delay = d 

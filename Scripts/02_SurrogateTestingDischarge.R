@@ -17,14 +17,14 @@ dump("predict_np_udf", file="Functions/predict_np_udf.R"); source("Functions/pre
 #dump("PPS_generate_udf", file="Functions/PPS_generate_udf.R"); source("Functions/PPS_generate_udf.R")
 
 #data ####
-#BosqueDisSignal <- read.csv("Results/BosqueFarmsSignal_Irrig.csv")
-#SanAcaciaDisSignal <- read.csv("Results/SanAcaciaSignal_Irrig.csv")
-IsletaDisSignal <- read.csv("Results/IsletaDischargeSignal_Irrig.csv")
+#BosqueDisSignal <- read.csv("Results/Signal_Discharge/BosqueFarmsSignal_Irrig.csv")
+#SanAcaciaDisSignal <- read.csv("Results/Signal_Discharge/SanAcaciaSignal_Irrig.csv")
+IsletaDisSignal <- read.csv("Results/Signal_Discharge/IsletaDischargeSignal_Irrig.csv")
 
 ## Theiler window estimated from space-time separation plot ####
 #tw_Bosque<-100
 #tw_SanA<-560
-tw_Isleta<-100
+tw_Isleta<-106
 
 tw <- tw_Isleta #CHANGE FOR EACH GAGE
 
@@ -122,7 +122,7 @@ run_time <- sys.stop-sys.start
 beep(3)
 
 ## Prepare table of surrogate results 
-sys.start <- Sys.time()
+
 if(np&&pe) {  #np, pe
   #Hypothesis results
   nse.H0<-if(nse.x<nse.high) {"Stochastic"} else {"Deterministic"}
@@ -141,11 +141,8 @@ if(np&&pe) {  #np, pe
   row.names(surr.table)<-c("Predictive skill","Entropy","k","alpha")
   colnames(surr.table)<-c("Time Series","surr(low)","surr(high)","H0")
 } #end np, pe - few seconds
-sys.stop <- Sys.time()
-run_time <- sys.stop-sys.start
-beep(3)
 
-sys.start <- Sys.time()
+
 if(np&&!pe) {  #np
   #Hypothesis results
   nse.H0<-if(nse.x<nse.high) {"Stochastic"} else {"Deterministic"}
@@ -161,11 +158,8 @@ if(np&&!pe) {  #np
   row.names(surr.table)<-c("Predictive skill","k","alpha")
   colnames(surr.table)<-c("Time Series","surr(low)","surr(high)","H0")
 } #end np
-sys.stop <- Sys.time()
-run_time <- sys.stop-sys.start
-beep(3)
 
-sys.start <- Sys.time()
+
 if(!np&&pe) {  #pe
   #Hypothesis results
   entropy.H0<-if(entropy.x>entropy.low) {"Stochastic"} else {"Deterministic"}
@@ -181,11 +175,9 @@ if(!np&&pe) {  #pe
   row.names(surr.table)<-c("Entropy","k","alpha")
   colnames(surr.table)<-c("Time Series","surr(low)","surr(high)","H0")
 } #end pe
-sys.stop <- Sys.time()
-run_time <- sys.stop-sys.start
-beep(3)
 
-#write.table(surr.table,"Results/SurrogateTest_IsletaDisch_Irrig.csv",col.names=NA,sep=",")
+
+write.table(surr.table,"Results/Surrogate_Discharge/SurrogateTest_IsletaDisch_Irrig.csv",col.names=NA,sep=",")
 
 print("Hypothesis Table");print(surr.table)
 
