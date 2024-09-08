@@ -17,7 +17,7 @@ datR1 <- read.csv("Data/Processed/DiversionSubreachData.csv") %>%
   mutate(Date = as.Date(Date, format = "%Y-%m-%d")) %>%
   filter(year(Date) >=2010) %>%
   filter(Reach == "R1") %>%
-  filter(between(month(Date), 4, 10)) %>%
+  #filter(between(month(Date), 4, 10)) %>%
   mutate_at(vars(contains(c("Extent", "Discharge_cfs", "Diversion_cfs",
   "Returns_cfs", "Temp_C", "Precip_mm"))), scale1) %>%
   select(Date, Extent, Discharge_cfs, Diversion_cfs,
@@ -25,96 +25,40 @@ datR1 <- read.csv("Data/Processed/DiversionSubreachData.csv") %>%
 
 #processed signal from Huffaker
 #for rEDM have to have a date column and it needs to be before the variable
-IsletaSign <- read.csv("Results/IsletaSignal_Irrig.csv") %>% 
-  rename(Extent = x) %>% 
-  mutate(Extent = as.numeric(Extent)) %>% 
-  cbind(datR1$Date) %>% 
-  rename(Date = 2, ExtentIsleta = Extent) %>% 
-  select(Date, ExtentIsleta)
+IsletaSign <- read.csv("Results/Signal/IsletaExtentSignal.csv") %>% 
+  rename(ExtentSig = x) 
 
-SanAcaciaSign <- read.csv("Results/SanAcaciaSignal_Irrig.csv") %>% 
-  rename(Extent = x) %>% 
-  mutate(Extent = as.numeric(Extent)) %>% 
-  cbind(datR1$Date) %>% 
-  rename(Date = 2, ExtentSanAcacia = Extent) %>% 
-  select(Date, ExtentSanAcacia)
-
-IsletaExtent <- read.csv("Data/Processed/ExtentChngDry_Irrig.csv") %>% 
+IsletaExtent <- read.csv("Data/Processed/ExtentChngDry.csv") %>% 
   mutate(Date = as.Date(Date, format = "%Y-%m-%d")) %>% 
   filter(Reach == "Isleta") %>%  #used year only to see SSA
-  rename(dates = Date, ExtentIsleta_Raw = ExtentDry) %>%   
-  filter(between(month(dates), 4, 10))
+  rename(dates = Date, Extent = ExtentDry)
 
-SanAcaciaExtent <- read.csv("Data/Processed/ExtentChngDry_Irrig.csv") %>% 
-  mutate(Date = as.Date(Date, format = "%Y-%m-%d")) %>% 
-  filter(Reach == "San Acacia") %>%  #used year only to see SSA
-  rename(dates = Date, ExtentSanAcacia_Raw = ExtentDry) %>%   
-  filter(between(month(dates), 4, 10))
-
-dat_all <- cbind(IsletaSign, SanAcaciaSign) %>% 
-  select(-3)
+dat_all <- as.data.frame(cbind(datR1$Date, IsletaSign$ExtentSig, IsletaExtent$Extent)) %>% 
+  rename(date = 1, ExtentSig = 2, Extent = 3)
 
 #start EDM ####
-simplex_Isleta <- Simplex(dataFrame = IsletaSign, lib = "1 1000", pred = "2000 2500", 
-                       columns = "ExtentIsleta", target = "ExtentIsleta", E = 3 )
-
-simplex_SanAcacia <- Simplex(dataFrame = SanAcaciaSign, lib = "1 1000", pred = "2000 2500", 
-                          columns = "ExtentSanAcacia", target = "ExtentSanAcacia", E = 3 )
+simplex_Isleta <- Simplex(dataFrame = dat_all, lib = "1 2000", pred = "2500 4300", 
+                       columns = "ExtentSig", target = "ExtentSig", E = 3 )
 
 ComputeError(simplex_Isleta$Observations, simplex_Isleta$Predictions)
-ComputeError(simplex_SanAcacia$Observations, simplex_SanAcacia$Predictions)
 
 #looking for optimal embedding dimension - look for the peak which 2 for both river reaches
-rho_E_Isleta <- EmbedDimension(dataFrame = IsletaSign, lib = "4 1000", pred = "2001 2500", 
-                        columns = "ExtentIsleta", target = "ExtentIsleta")
-
-rho_E_SanAcacia <- EmbedDimension(dataFrame = SanAcaciaSign, lib = "4 1000", pred = "2001 2500", 
-                               columns = "ExtentSanAcacia", target = "ExtentSanAcacia")
+rho_E_Isleta <- EmbedDimension(dataFrame = dat_all, lib = "1 2000", pred = "2500 4300", 
+                        columns = "ExtentSig", target = "ExtentSig")
 
 E = 2
 
-
-rho_E_IsletaRaw <- EmbedDimension(dataFrame = IsletaExtent, lib = "4 1000", pred = "2001 2500", 
-                               columns = "ExtentIsleta_Raw", target = "ExtentIsleta_Raw")
-Eraw_isleta = 3
-
-rho_E_SanAcaciaRaw <- EmbedDimension(dataFrame = SanAcaciaExtent, lib = "4 1000", pred = "2001 2500", 
-                                  columns = "ExtentSanAcacia_Raw", target = "ExtentSanAcacia_Raw")
-Eraw_sanacacia = 5
-
 #reduction in forecast means the system could be chaotic 
-rho_Tp_Isleta <- PredictInterval(dataFrame = IsletaSign, lib = "4 1000", pred = "2001 2500", 
-                          columns = "ExtentIsleta", target = "ExtentIsleta", E = E)
-
-rho_Tp_SanAcacia <- PredictInterval(dataFrame = SanAcaciaSign, lib = "4 1000", pred = "2001 2500", 
-                             columns = "ExtentSanAcacia", target = "ExtentSanAcacia", E = E)
+rho_Tp_Isleta <- PredictInterval(dataFrame = dat_all, lib = "1 2000", pred = "2500 4300", 
+                          columns = "ExtentSig", target = "ExtentSig", E = E)
 
 
-
-rho_Tp_IsletaRaw <- PredictInterval(dataFrame = IsletaExtent, lib = "4 1000", pred = "2001 2500", 
-                                 columns = "ExtentIsleta_Raw", target = "ExtentIsleta_Raw", E = Eraw_isleta)
-
-rho_Tp_SanAcaciaRaw <- PredictInterval(dataFrame = SanAcaciaExtent, lib = "4 1000", pred = "2001 2500", 
-                                    columns = "ExtentSanAcacia_Raw", target = "ExtentSanAcacia_Raw", E = Eraw_sanacacia)
-
-#assess whether data are nonlinear -if nonlinear then you should see prediction forecast improves as theta
-#increases. 
-#Decreases with signal data for both reaches. Increase with raw for isleta then decreases and decreases with raw
-#for San Acacia
-
-#However, Huffaker surrogate tests for nonlinear deterministic, not just nonlinear.
-rho_theta_Isleta <- PredictNonlinear(dataFrame = IsletaSign, lib = "1 1000", pred = "2001 2500", 
-                              columns = "ExtentIsleta", target = "ExtentIsleta", E = E) #decreases with theta
-
-rho_theta_SanAcacia <- PredictNonlinear(dataFrame = SanAcaciaSign, lib = "1 1000", pred = "2001 2500", 
-                                 columns = "ExtentSanAcacia", target = "ExtentSanAcacia", E = E)
+#assess whether data are nonlinear -if nonlinear then you should see prediction forecast improves
+#for some period of time as theta #increases. 
+rho_theta_Isleta <- PredictNonlinear(dataFrame = dat_all, lib = "1 2000", pred = "2500 4300", 
+                              columns = "ExtentSig", target = "ExtentSig", E = E, tau = 83) #decreases with theta
 
 
-rho_theta_IsletaRaw <- PredictNonlinear(dataFrame = IsletaExtent, lib = "4 1000", pred = "2001 2500", 
-                                    columns = "ExtentIsleta_Raw", target = "ExtentIsleta_Raw", E = Eraw_isleta)
-
-rho_theta_SanAcaciaRaw <- PredictNonlinear(dataFrame = SanAcaciaExtent, lib = "4 1000", pred = "2001 2500", 
-                                       columns = "ExtentSanAcacia_Raw", target = "ExtentSanAcacia_Raw", E = Eraw_sanacacia)
 
 #convergent cross mapping
 #cross mapping indicates causal influence in the reverse direction 
