@@ -92,7 +92,7 @@ if(np) {
 sys.stop <- Sys.time()
 run_time <- sys.stop-sys.start
 run_time
-beep(3)
+
 
 ## Lower-tailed test for entropy measure
 

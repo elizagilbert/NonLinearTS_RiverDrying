@@ -17,7 +17,7 @@ datR1 <- read.csv("Data/Processed/DiversionSubreachData.csv") %>%
   mutate(Date = as.Date(Date, format = "%Y-%m-%d")) %>%
   filter(year(Date) >=2010) %>%
   filter(Reach == "R1") %>%
-  filter(between(month(Date), 4, 10)) %>%
+  #filter(between(month(Date), 4, 10)) %>%
   mutate_at(vars(contains(c("Extent", "Discharge_cfs", "Diversion_cfs",
   "Returns_cfs", "Temp_C", "Precip_mm"))), scale1) %>%
   select(Date, Extent, Discharge_cfs, Diversion_cfs,
@@ -25,20 +25,17 @@ datR1 <- read.csv("Data/Processed/DiversionSubreachData.csv") %>%
 
 #processed signal from Huffaker
 #for rEDM have to have a date column and it needs to be before the variable
-IsletaSign <- read.csv("Results/IsletaSignal_Irrig.csv") %>% 
+IsletaSign <- read.csv("Results/Signal/IsletaExtentSignal.csv") %>% 
   rename(Extent = x) %>% 
   mutate(Extent = as.numeric(Extent)) %>% 
   cbind(datR1$Date) %>% 
   rename(Date = 2) %>% 
   select(Date, Extent)
 
-dat_DischSigIsleta <- read.csv("Results/Signal_Discharge/IsletaDischargeSignal_Irrig.csv") %>% 
-  rename(IsletaDisch = 1)
-
-dat_DischSigBosque <- read.csv("Results/Signal_Discharge/BosqueFarmsSignal_Irrig.csv") %>% 
+dat_DischSigBosque <- read.csv("Results/Signal/BosqueDischSignal.csv") %>% 
   rename(BosqueDisch = 1)
 
-dat_all <- cbind(IsletaSign, dat_DischSigBosque, dat_DischSigIsleta)
+dat_all <- cbind(IsletaSign, dat_DischSigBosque)
 
 #start EDM ####
 simplex_out1 <- Simplex(dataFrame = IsletaSign, lib = "1 1000", pred = "2000 2500", 
@@ -59,11 +56,10 @@ rho_Tp_R1 <- PredictInterval(dataFrame = IsletaSign, lib = "4 1000", pred = "200
 
 
 
-#assess whether data are nonlinear -if nonlinear then you should see prediction forecast improves as theta
-#increases so this would suggest Isleta is not nonlinear. However, these data are signal without the
-#noise so I'm not sure this is the rigth test and would lean more heavily on Huffaker surrogate
-#for the test of nonlinearity deterministic.
-rho_theta_R1 <- PredictNonlinear(dataFrame = IsletaSign, lib = "1 1000", pred = "2001 2500", 
+#assess whether data are nonlinear -if nonlinear then you should see prediction forecast increase,
+#at least initially, as theta increases
+
+rho_theta_R1 <- PredictNonlinear(dataFrame = dat_all, lib = "1 2000", pred = "2001 3000", 
                               columns = "Extent", target = "Extent", E = 2)
 
 

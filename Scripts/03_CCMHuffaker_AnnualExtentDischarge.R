@@ -18,18 +18,18 @@ library(R.devices)  #ignore graphics
 
 #processed signal from Huffaker
 #for rEDM have to have a date column and it needs to be before the variable
-IsletaSign <- read.csv("Results/IsletaSignal_Irrig.csv") %>% 
+IsletaSign <- read.csv("Results/Signal/IsletaExtentSignal.csv") %>% 
   rename(Extent = x) %>% 
   mutate(Extent = as.numeric(Extent)) 
 
 
-IsletaDischSign <- read.csv("Results/Signal_Discharge/IsletaDischargeSignal_Irrig.csv") %>% 
+IsletaDischSign <- read.csv("Results/Signal/BosqueDischSignal.csv") %>% 
   rename(Discharge = 1)
 
 ##CCM: Does A cause B? (B xmap A) ####
 lib_sequence<-5  #by argument in sequence statement
-A<-IsletaDischSign$Discharge #forcing process  
-B<-IsletaSign$Extent     #response process: calculate d, m, and tw from this time series
+B<-IsletaDischSign$Discharge #forcing process  
+A<-IsletaSign$Extent     #response process: calculate d, m, and tw from this time series
 
 
 # theiler window for B ####
@@ -53,8 +53,8 @@ plot(contour_10,type='l')
 tw <- as.numeric(which.max(contour_10))
 
 ## Extended CCM ####
-num.bd<-10   #Delayed CCM: max backward time delay
-num.fd<-10   #Delayed CCM: max forward time dealy
+num.bd<-14   #Delayed CCM: max backward time delay
+num.fd<-14   #Delayed CCM: max forward time dealy
 
 
 ###############################
@@ -73,9 +73,14 @@ d<-results.embed[[1]]
 m<-results.embed[[2]]
 
 ## Run CCM: Does A cause B?
+sys.start <- Sys.time()
 lib<-seq((d*(m-1)+(m+1)),(length(A)-m+2),lib_sequence)
 ccm.xy<-CCM_boot(A,B,m,d,DesiredL=lib,iterations=100) #takes about 20 minutes
 ccm_rho<-ccm.xy$rho
+sys.stop <- Sys.time()
+run_time <- sys.stop-sys.start
+
+beep(3)
 
 ## Statistical signficance
 # ccm.xy is significant at the alpha=0.01 level if pvalue <= 0.01
@@ -150,3 +155,5 @@ plot(rho.delay.matrix[,1],rho.delay.matrix.rounded,type='l',
 
 # Pass Extended-CCM: delay.max <= 0
 delay.max
+
+write.csv(rho.delay.matrix, "Results/ExtendedCCM/IsletaExtentCausingBosqDisch14Delay.csv", row.names = F)

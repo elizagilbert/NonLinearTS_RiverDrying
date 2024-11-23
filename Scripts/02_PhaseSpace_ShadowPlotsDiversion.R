@@ -75,8 +75,8 @@ colnames(reconstruction2)<-c("dates","data","standardized","signal","noise",
 DiversionSignal <- reconstruction2$signal
 
 #save the signal
-write.csv(reconstruction2, "Results/Reconstruction/IsletaDiversionReconstruction.csv", row.names = F)
-write.csv(DiversionSignal, "Results/Signal/IsletaDiversionSignal.csv", row.names = F)
+# write.csv(reconstruction2, "Results/Reconstruction/IsletaDiversionReconstruction.csv", row.names = F)
+# write.csv(DiversionSignal, "Results/Signal/IsletaDiversionSignal.csv", row.names = F)
 
 
 #Embedding delay with Mutual Information Function 
@@ -124,7 +124,7 @@ head(Mx)
 
 Mx <- Mx[,1:3]
 
-write.csv(Mx, "Results/Mx/IsletaDiversion_Mx.csv", row.names = F)
+# write.csv(Mx, "Results/Mx/IsletaDiversion_Mx.csv", row.names = F)
 
 #Plotting shadow and phase-space together
 
@@ -141,7 +141,7 @@ scatterplot3d(Mx, type = "l", main="shadow diversion")
 
 
 #All Data _ San Acacia ####
-IsletaDiv <- read.csv("Data/Processed/DiversionSubreachData.csv") %>% 
+SanAcaciaDiv <- read.csv("Data/Processed/DiversionSubreachData.csv") %>% 
   filter(Reach == "R2") %>% 
   mutate(dates = as.Date(Date, format = "%Y-%m-%d")) %>% 
   filter(year(dates) >= 2010) %>% 
@@ -151,10 +151,10 @@ IsletaDiv <- read.csv("Data/Processed/DiversionSubreachData.csv") %>%
   mutate(Diversion_cfs = na.approx(Diversion_cfs, na.rm = FALSE)) %>% 
   mutate(time = 1:length(dates))
 
-ts <- IsletaDiv$Diversion_cfs #change based on what gage using
+ts <- SanAcaciaDiv$Diversion_cfs #change based on what gage using
 x.obs <- ts
 x<-standardize(x.obs)   #standardize data
-dates<-IsletaDiv$dates
+dates<-SanAcaciaDiv$dates
 
 #Fourier Power Spectrum #
 # dump("spectral_udf", file="Functions/spectral_udf.R");source("Functions/spectral_udf.R")
@@ -185,19 +185,20 @@ colnames(reconstruction2)<-c("dates","data","standardized","signal","noise",
 DiversionSignal <- reconstruction2$signal
 
 #save the signal
-write.csv(reconstruction2, "Results/Reconstruction/SanAcaciaDiversionReconstruction.csv", row.names = F)
-write.csv(DiversionSignal, "Results/Signal/SanAcaciaDiversionSignal.csv", row.names = F)
+# write.csv(reconstruction2, "Results/Reconstruction/SanAcaciaDiversionReconstruction.csv", row.names = F)
+# write.csv(DiversionSignal, "Results/Signal/SanAcaciaDiversionSignal.csv", row.names = F)
 
 
 #Embedding delay with Mutual Information Function 
-# DiversionSignal <- as.matrix(read.csv("Results/Signal/IsletaDiversionSignal.csv"))
+# DiversionSignal <- as.matrix(read.csv("Results/Signal/SanAcaciaDiversionSignal.csv"))
 
-mutual.out <- mutual(DiversionSignal, lag.max = 200) #mutual(tseriesChaos) Embedding delay = d 
+mutual.out <- mutual(DiversionSignal, lag.max = 100) #mutual(tseriesChaos) Embedding delay = d 
 d <- as.numeric(as.data.frame(mutual.out) %>% 
                   rownames_to_column() %>% 
                   filter(x == min(x)) %>% 
                   rename(Emdelay = 1) %>% 
                   select(Emdelay))
+d <- 76 #this is the better embedding delay to see the attractor
 
 # dump("embed_delay_udf", file="Functions/embed_delay_udf.R");source("Functions/embed_delay_udf.R")
 # d<-d_udf(IsletaSignal)  #compute average mutual information function with udf embed_delay_udf
