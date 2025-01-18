@@ -17,47 +17,47 @@ plan(multisession)
 
 #need diversion/returns, extent/precip, extent/temp, precip/discharge
 
-# from other EDM testing and keeping to get Date column
+# # from other EDM testing and keeping to get Date column
 scale1 <- function(x) scale(x)[,1]
-
-BosqueFarms <- read.csv("Data/Processed/USGS_discharge.csv") %>%
-  filter(site_name == "BosqueFarms") %>%
-  mutate(dates = as.Date(dateTime, format = "%Y-%m-%d")) %>%
-  filter(year(dates) >= 2010)
-
-# Escondida <- read.csv("Data/Processed/USGS_discharge.csv") %>%
-#   filter(site_name == "Escondida") %>%
+# 
+# BosqueFarms <- read.csv("Data/Processed/USGS_discharge.csv") %>%
+#   filter(site_name == "BosqueFarms") %>%
 #   mutate(dates = as.Date(dateTime, format = "%Y-%m-%d")) %>%
-#   filter(year(dates) >= 2010) %>%
-#   mutate(Discharge_cfs = na.approx(Discharge_cfs, na.rm = F))
-
-datR1 <- read.csv("Data/Processed/DiversionSubreachData.csv") %>%
-  mutate(Date = as.Date(Date, format = "%Y-%m-%d")) %>%
-  filter(year(Date) >=2010) %>%
-  filter(Reach == "R1") %>%
-  cbind(BosqueFarms$Discharge_cfs) %>% 
-  mutate_at(vars(contains(c("Extent", "Discharge_cfs", "Diversion_cfs",
-                            "Returns_cfs", "Temp_C", "Precip_mm"))), scale1) %>%
-  select(Date, Extent, Discharge_cfs, Diversion_cfs, 
-         Returns_cfs, Temp_C, Precip_mm)
-
-# # Only April to October, with NA row after each year's October data
-# Dat_W_NA <- read.csv("Data/Processed/DiversionSubreachData.csv") %>%
+#   filter(year(dates) >= 2010)
+# 
+# # Escondida <- read.csv("Data/Processed/USGS_discharge.csv") %>%
+# #   filter(site_name == "Escondida") %>%
+# #   mutate(dates = as.Date(dateTime, format = "%Y-%m-%d")) %>%
+# #   filter(year(dates) >= 2010) %>%
+# #   mutate(Discharge_cfs = na.approx(Discharge_cfs, na.rm = F))
+# 
+# datR1 <- read.csv("Data/Processed/DiversionSubreachData.csv") %>%
 #   mutate(Date = as.Date(Date, format = "%Y-%m-%d")) %>%
 #   filter(year(Date) >=2010) %>%
 #   filter(Reach == "R1") %>%
-#   cbind(BosqueFarms$Discharge_cfs) %>% 
+#   #cbind(BosqueFarms$Discharge_cfs) %>% 
 #   mutate_at(vars(contains(c("Extent", "Discharge_cfs", "Diversion_cfs",
 #                             "Returns_cfs", "Temp_C", "Precip_mm"))), scale1) %>%
 #   select(Date, Extent, Discharge_cfs, Diversion_cfs, 
-#          Returns_cfs, Temp_C, Precip_mm) %>% 
-#   filter(between(month(Date), 4, 10))%>%
-#   mutate(Year = year(Date)) %>% 
-#   arrange(Date) %>%
-#   group_by(Year) %>%
-#   group_modify(~ add_row(.x, Date = NA, Extent = NA, Diversion_cfs = NA, Discharge_cfs = NA, Returns_cfs = NA, Temp_C = NA, Precip_mm = NA)) %>%
-#   ungroup() %>%
-#   select(-Year)
+#          Returns_cfs, Temp_C, Precip_mm)
+
+# # Only April to October, with NA row after each year's October data
+Dat_W_NA <- read.csv("Data/Processed/DiversionSubreachData.csv") %>%
+  mutate(Date = as.Date(Date, format = "%Y-%m-%d")) %>%
+  filter(year(Date) >=2010) %>%
+  filter(Reach == "R2") %>%
+  #cbind(BosqueFarms$Discharge_cfs) %>%
+  mutate_at(vars(contains(c("Extent", "Discharge_cfs", "Diversion_cfs",
+                            "Returns_cfs", "Temp_C", "Precip_mm"))), scale1) %>%
+  select(Date, Extent, Discharge_cfs, Diversion_cfs,
+         Returns_cfs, Temp_C, Precip_mm) %>%
+  filter(between(month(Date), 4, 10))%>%
+  mutate(Year = year(Date)) %>%
+  arrange(Date) %>%
+  group_by(Year) %>%
+  group_modify(~ add_row(.x, Date = NA, Extent = NA, Diversion_cfs = NA, Discharge_cfs = NA, Returns_cfs = NA, Temp_C = NA, Precip_mm = NA)) %>%
+  ungroup() %>%
+  select(-Year)
 
 #Calculate optimal E ####
 maxE<-10 #Maximum E to test
@@ -70,8 +70,8 @@ Emat<-matrix(nrow=maxE-1, ncol=2); colnames(Emat)<-c("A", "B")
 for(E in 2:maxE) {
   #Uses defaults of looking forward one prediction step (predstep)
   #And using time lag intervals of one time step (tau)
-  Emat[E-1,"A"]<-SSR_pred_boot(A=datR1$Extent, E=E, predstep=1, tau=1)$rho
-  Emat[E-1,"B"]<-SSR_pred_boot(A=datR1$Returns_cfs, E=E, predstep=1, tau=1)$rho
+  Emat[E-1,"A"]<-SSR_pred_boot(A=Dat_W_NA$Returns_cfs, E=E, predstep=1, tau=1)$rho
+  Emat[E-1,"B"]<-SSR_pred_boot(A=Dat_W_NA$Discharge_cfs, E=E, predstep=1, tau=1)$rho
 }
 
 #Look at plots to find E for each process at which
@@ -80,17 +80,17 @@ matplot(2:maxE, Emat, type="l", col=1:2, lty=1:2,
         xlab="E", ylab="rho", lwd=2)
 legend("bottomleft", c("A", "B"), lty=1:2, col=1:2, lwd=2, bty="n")
 
-E_A<-6
-E_B<-5
+E_A<-2
+E_B<-2
 
 #check nonlinear ####
 #Check data for nonlinear signal that is not dominated by noise
 #Checks whether predictive ability of processes declines with
 #increasing time distance
 #See manuscript and R code for details
-signal_A_out<-SSR_check_signal(A=datR1$Precip_mm, E=E_A, tau=1,
+signal_A_out<-SSR_check_signal(A=Dat_W_NA$Returns_cfs, E=E_A, tau=1,
                                predsteplist=1:10)
-signal_B_out<-SSR_check_signal(A=datR1$Returns_cfs, E=E_B, tau=1,
+signal_B_out<-SSR_check_signal(A=Dat_W_NA$Discharge_cfs, E=E_B, tau=1,
                                predsteplist=1:10)
 plot(signal_A_out$predatout$predstep, signal_A_out$predatout$rho)
 plot(signal_B_out$predatout$predstep, signal_B_out$predatout$rho)
@@ -114,12 +114,12 @@ sys.start <- Sys.time()
 # The first data input is A
 
   #Note - increase iterations to 100 for consistant results
-CCM_boot_A<-CCM_boot(datR1$Extent, datR1$Returns_cfs, E_A, tau=1, iterations=10)
+CCM_boot_A<-CCM_boot(Dat_W_NA$Extent, Dat_W_NA$Returns_cfs, E_A, tau=1, iterations=10)
 
 
 # Does B "cause" A?
 
-CCM_boot_B<-CCM_boot(datR1$Returns_cfs, datR1$Extent, E_B, tau=1, iterations=10)
+CCM_boot_B<-CCM_boot(Dat_W_NA$Returns_cfs, Dat_W_NA$Discharge_cfs, E_B, tau=1, iterations=10)
 
 
 #Test for significant causal signal
@@ -135,15 +135,15 @@ beep(1)
 
 CCM_Extent_Discharge <- c(CCM_boot_A, CCM_boot_B)
 
-names(CCM_Extent_Discharge)[4] <- "rho_ExtentCausesReturns_cfs"
-names(CCM_Extent_Discharge)[13] <- "rho_Returns_cfsCausesExtent"
+names(CCM_Extent_Discharge)[4] <- "rho_ReturnsCausesDischarge_cfs"
+names(CCM_Extent_Discharge)[13] <- "rho_Discharge_cfsCausesReturns"
 
-saveRDS(CCM_Extent_Discharge, file="Results/MultiSpatial_CCM/Isleta/AllDat_CCMBoot_Extent_Returns_IS.RData")
+saveRDS(CCM_Extent_Discharge, file="Results/MultiSpatial_CCM/SanAcacia/AllDat_CCMBoot_Returns_Discharge_IS.RData")
 
 
 
 #Get results ####
-temp <- readRDS("Results/MultiSpatial_CCM/Isleta/CCMBoot_Diversions_DischargeIS.RData")
+temp <- readRDS("Results/MultiSpatial_CCM/SanAcacia/CCMBoot_Returns_Precip.RData")
 
 names(temp)[4] <- "rho"
 names(temp)[13] <- "rho"
