@@ -6,14 +6,14 @@ library(lubridate)
 #plan(multisession)
 
 #data  ####
-Isleta_Div <- read.csv("Data/Processed/DiversionSubreachData.csv") %>% 
+Isleta <- read.csv("Data/Processed/DiversionSubreachData.csv") %>% 
   filter(Reach == "R1") %>% 
   mutate(dates = as.Date(Date, format = "%Y-%m-%d"), Year = year(dates)) %>% 
   filter(year(dates) >= 2010) %>%
   filter(between(month(dates), 4, 10)) %>%
   select(Extent, Discharge_cfs, Diversion_cfs, Returns_cfs, Temp_C, Precip_mm, Year) 
 
-SanAcacia_Div <- read.csv("Data/Processed/DiversionSubreachData.csv") %>% 
+SanAcacia <- read.csv("Data/Processed/DiversionSubreachData.csv") %>% 
   filter(Reach == "R2") %>% 
   mutate(dates = as.Date(Date, format = "%Y-%m-%d"), Year = year(dates)) %>% 
   filter(year(dates) >= 2010) %>%
@@ -33,12 +33,18 @@ calculate_entropy_by_year <- function(data) {
 }
 
 # Apply the function
-entropy_by_year <- calculate_entropy_by_year(SanAcacia_Div)
+entropy_by_year_Is <- calculate_entropy_by_year(Isleta)
+entropy_by_year_SanAcacia <- calculate_entropy_by_year(SanAcacia)
 
 # Calculate average and standard deviation of entropy across years for each variable
-entropy_summary <- entropy_by_year %>%
+entropy_summary_Is <- entropy_by_year_Is %>%
   summarise(across(starts_with("entropy_"), 
-                   list(mean = mean, sd = sd), 
+                   list(mean = mean), 
+                   .names = "{.col}_{.fn}"))
+
+entropy_summary_SanAcacia <- entropy_by_year_SanAcacia %>%
+  summarise(across(starts_with("entropy_"), 
+                   list(mean = mean), 
                    .names = "{.col}_{.fn}"))
 
 #conditional entropy####
@@ -85,13 +91,16 @@ calculate_conditional_entropy <- function(data) {
 }
 
 # Apply the function
-percent_reduction_by_year <- calculate_conditional_entropy(SanAcacia_Div)
+percent_reduction_by_year_Is <- calculate_conditional_entropy(Isleta)
+percent_reduction_by_year_SanA <- calculate_conditional_entropy(SanAcacia)
 
 # Average the percent reduction matrices across all years
-average_percent_reduction <- Reduce("+", percent_reduction_by_year) / length(percent_reduction_by_year)
+average_percent_reduction_Is <- Reduce("+", percent_reduction_by_year_Is) / length(percent_reduction_by_year_Is)
+average_percent_reduction_SanA <- Reduce("+", percent_reduction_by_year_SanA) / length(percent_reduction_by_year_SanA)
 
 # Round results
-average_percent_reduction <- round(average_percent_reduction, 0)
+average_percent_reduction_Is <- round(average_percent_reduction_Is, 0)
+average_percent_reduction_SanA <- round(average_percent_reduction_SanA, 0)
 
 #best lag ####
 # Function to calculate optimal lag for highest reduction in conditional entropy and SE

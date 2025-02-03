@@ -5,46 +5,48 @@ library(cowplot)
 library(magick)
 
 #data ####
-ExtentIsl_Mx <- read.csv("Results/Mx/IsletaExtent_Mx.csv")
-BosqueDischarge_Mx <- read.csv("Results/Mx/BosqueDischarge_Mx.csv") %>% select(!X)
-DiversionIsl_Mx <- read.csv("Results/Mx/IsletaDiversion_Mx.csv") 
-ReturnsIsl_Mx <- read.csv("Results/Mx/IsletaReturns_Mx.csv")
-PrecipIsl_Mx <- read.csv("Results/Mx/IsletaPrecip_Mx.csv")
-TempIsl_Mx <- read.csv("Results/Mx/IsletaTemp_Mx.csv")%>% select(!X)
+ExtentIsl_Mx <- read.csv("Results/Mx/TWIsleta_Extent_m2_Mx.csv")
+DischargeIsl_Mx <- read.csv("Results/Mx/TWIsleta_Discharge_Mx.csv") 
+DiversionIsl_Mx <- read.csv("Results/Mx/TWIsleta_Diversion_Mx.csv") 
+ReturnsIsl_Mx <- read.csv("Results/Mx/TWIsleta_Returns_Mx.csv")
+PrecipIsl_Mx <- read.csv("Results/Mx/TWIsleta_Precip_Mx.csv")
+TempIsl_Mx <- read.csv("Results/Mx/TWIsleta_Temp_m2_Mx.csv")
 
-ExtentSanAcacia_Mx <- read.csv("Results/Mx/SanAcaciaExtent_Mx.csv")
-EscondidaDischarge_Mx <- read.csv("Results/Mx/EscondidaDischarge_Mx.csv")
-DiversionSanAcacia_Mx <- read.csv("Results/Mx/SanAcaciaDiversion_Mx.csv") 
-ReturnsSanAcacia_Mx <- read.csv("Results/Mx/SanAcaciaReturns_Mx.csv")
-PrecipSanAcacia_Mx <- read.csv("Results/Mx/SanAcaciaPrecip_Mx.csv")
-TempSanAcacia_Mx <- read.csv("Results/Mx/SanAcaciaTemp_Mx.csv")
+ExtentSanAcacia_Mx <- read.csv("Results/Mx/TWSanAcacia_Extent_m2_Mx.csv")
+DischargeSanAcacia_Mx <- read.csv("Results/Mx/TWSanAcacia_discharge_Mx.csv")
+DiversionSanAcacia_Mx <- read.csv("Results/Mx/TWSanAcacia_Diversions_Mx.csv") 
+ReturnsSanAcacia_Mx <- read.csv("Results/Mx/TWSanAcacia_Returns_Mx.csv")
+PrecipSanAcacia_Mx <- read.csv("Results/Mx/TWSanAcacia_Precip_Mx.csv")
+TempSanAcacia_Mx <- read.csv("Results/Mx/TWSanAcacia_Temp_Mx.csv")
 
 # Extent ####
 jpeg("Figures/Shadow_Extent.jpg", width = 800, height = 600, res = 100)
 ShadExtent_PL <- scatterplot3d(
   x = ExtentIsl_Mx[,1],
   y = ExtentIsl_Mx[,2],
-  z = ExtentIsl_Mx[,3],
+  #z = ExtentIsl_Mx[,3],
   type = "l",
-  main = "Extent dry",
+  main = "Drying",
   xlab = "",   # Title for the X axis
   ylab = "",    # Title for the Y axis
   zlab = "",
   lwd = 2,
   col.axis = "black",
   cex.lab = 2,
-  cex.main = 2
+  cex.main = 2,
+  angle = -45,
+  phi = 15
 )
-
 # Add the new data as another line
 ShadExtent_PL$points3d(
   x = ExtentSanAcacia_Mx[,1],
   y = ExtentSanAcacia_Mx[,2],
-  z = ExtentSanAcacia_Mx[,3],
+  #z = ExtentSanAcacia_Mx[,3],
   type = "l",
-  col = rgb(1, 0, 0, 0.5), # Red with 50% transparency
+  col = rgb(1, 0.5, 0, 0.7), # Red with 50% transparency
   lwd = 2
 )
+
 dev.off()
 
 
@@ -52,9 +54,9 @@ dev.off()
 # Discharge ####
 jpeg("Figures/Shadow_Discharge.jpg", width = 800, height = 600, res = 100)
 ShadDischarge_PL <- scatterplot3d(
-  x = BosqueDischarge_Mx[,1],
-  y = BosqueDischarge_Mx[,2],
-  z = BosqueDischarge_Mx[,3],
+  x = DischargeIsl_Mx[,1],
+  y = DischargeIsl_Mx[,2],
+  z = DischargeIsl_Mx[,3],
   type = "l",
   main = "Discharge",
   xlab = "",   # Title for the X axis
@@ -68,17 +70,21 @@ ShadDischarge_PL <- scatterplot3d(
 
 # Add the new data as another line
 ShadDischarge_PL$points3d(
-  x = EscondidaDischarge_Mx[,1],
-  y = EscondidaDischarge_Mx[,2],
-  z = EscondidaDischarge_Mx[,3],
+  x = DischargeSanAcacia_Mx[,1],
+  y = DischargeSanAcacia_Mx[,2],
+  z = DischargeSanAcacia_Mx[,3],
   type = "l",
-  col = rgb(1, 0, 0, 0.5), # Red with 50% transparency
+  col = rgb(1, 0.5, 0, 0.8), # Red with 50% transparency
   lwd = 2
 )
 dev.off()
 
 # Diversion ####
 jpeg("Figures/Shadow_Diversion.jpg", width = 800, height = 600, res = 100)
+x_range <- range(c(DiversionIsl_Mx[,1], DiversionSanAcacia_Mx[,1]))
+y_range <- range(c(DiversionIsl_Mx[,2], DiversionSanAcacia_Mx[,2]))
+z_range <- range(c(DiversionIsl_Mx[,3], DiversionSanAcacia_Mx[,3]))
+
 ShadDiversion_PL <- scatterplot3d(
   x = DiversionIsl_Mx[,1],
   y = DiversionIsl_Mx[,2],
@@ -86,8 +92,11 @@ ShadDiversion_PL <- scatterplot3d(
   type = "l",
   main = "Diversions",
   xlab = "",   # Title for the X axis
-  ylab = "",    # Title for the Y axis
+  ylab = "",   # Title for the Y axis
   zlab = "",
+  xlim = x_range,  # Adjust X-axis limits
+  ylim = y_range,  # Adjust Y-axis limits
+  zlim = z_range,  # Adjust Z-axis limits
   lwd = 2,
   col.axis = "black",
   cex.lab = 2,
@@ -100,14 +109,14 @@ ShadDiversion_PL$points3d(
   y = DiversionSanAcacia_Mx[,2],
   z = DiversionSanAcacia_Mx[,3],
   type = "l",
-  col = rgb(1, 0, 0, 0.5), # Red with 50% transparency
+  col = rgb(1, 0.5, 0, 0.8), # Red with 50% transparency
   lwd = 2
 )
 dev.off()
 
 # Returns ####
 jpeg("Figures/Shadow_Returns.jpg", width = 800, height = 600, res = 100)
-ShadExtent_PL <- scatterplot3d(
+ShadReturns_PL <- scatterplot3d(
   x = ReturnsIsl_Mx[,1],
   y = ReturnsIsl_Mx[,2],
   z = ReturnsIsl_Mx[,3],
@@ -123,12 +132,12 @@ ShadExtent_PL <- scatterplot3d(
 )
 
 # Add the new data as another line
-ShadExtent_PL$points3d(
+ShadReturns_PL$points3d(
   x = ReturnsSanAcacia_Mx[,1],
   y = ReturnsSanAcacia_Mx[,2],
   z = ReturnsSanAcacia_Mx[,3],
   type = "l",
-  col = rgb(1, 0, 0, 0.5), # Red with 50% transparency
+  col = rgb(1, 0.5, 0, 0.8), # Red with 50% transparency
   lwd = 2
 )              #
 
@@ -136,9 +145,9 @@ dev.off()
 
 
 
-#Isleta Precipitation ####
+# Precipitation ####
 jpeg("Figures/Shadow_Precip.jpg", width = 800, height = 600, res = 100)
-ShadExtent_PL <- scatterplot3d(
+ShadPrcip_PL <- scatterplot3d(
   x = PrecipIsl_Mx[,1],
   y = PrecipIsl_Mx[,2],
   z = PrecipIsl_Mx[,3],
@@ -154,23 +163,23 @@ ShadExtent_PL <- scatterplot3d(
 )
 
 # Add the new data as another line
-ShadExtent_PL$points3d(
+ShadPrcip_PL$points3d(
   x = PrecipSanAcacia_Mx[,1],
   y = PrecipSanAcacia_Mx[,2],
   z = PrecipSanAcacia_Mx[,2],
   type = "l",
-  col = rgb(1, 0, 0, 0.5), # Red with 50% transparency
+  col = rgb(1, 0.5, 0, 0.8), # Red with 50% transparency
   lwd = 2
 )        #
 
 dev.off()
 
-#Isleta Temperature ####
+# Temperature ####
 jpeg("Figures/Shadow_Temp.jpg", width = 800, height = 600, res = 100)
-ShadExtent_PL <- scatterplot3d(
+ShadTemp_PL <- scatterplot3d(
   x = TempIsl_Mx[,1],
   y = TempIsl_Mx[,2],
-  z = TempIsl_Mx[,3],
+  #z = TempIsl_Mx[,3],
   type = "l",
   main = "Temperature",
   xlab = "",   # Title for the X axis
@@ -179,16 +188,18 @@ ShadExtent_PL <- scatterplot3d(
   lwd = 2,
   col.axis = "black",
   cex.lab = 2,
-  cex.main = 2
+  cex.main = 2,
+  angle = -45,
+  phi = 15
 )
 
 # Add the new data as another line
-ShadExtent_PL$points3d(
+ShadTemp_PL$points3d(
   x = TempSanAcacia_Mx[,1],
   y = TempSanAcacia_Mx[,2],
-  z = TempSanAcacia_Mx[,3],
+  #z = TempSanAcacia_Mx[,3],
   type = "l",
-  col = rgb(1, 0, 0, 0.5), # Red with 50% transparency
+  col = rgb(1, 0.5, 0, 0.8), # Red with 50% transparency
   lwd = 2
 )      #
 
